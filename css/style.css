@@ -44,8 +44,11 @@ button:hover {
   position: relative;
 }
 .set-card.copied {
-  border: 2px solid red;
+  border: 2px solid red; background-color: #673fdc 
+  /* ইচ্ছা করলে নিচের লাইন আনকমেন্ট করে ব্যাকগ্রাউন্ড কালারও পরিবর্তন করতে পারো */
+  /* background-color: #673fdc !important; */
 }
+
 .set-card pre {
   text-align: left;
   white-space: pre-wrap;
