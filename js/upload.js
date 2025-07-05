@@ -6,9 +6,9 @@ document.getElementById('uploadBtn').onclick = async () => {
   const email = localStorage.getItem('auth_user');
   if (!email) return window.location.href = 'index.html';
 
-  // Delete existing proxies & copies
-  await supabase.from('proxies').delete();
-  await supabase.from('copied_sets').delete();
+// শুধু proxies ডিলিট করো, copied_sets ডিলিট করো না কারণ আমরা আর ব্যবহার করবো না
+await supabase.from('proxies').delete();
+
 
   const text = document.getElementById('proxyInput').value;
   const lines = text.split('\n').filter(l => l.trim());
