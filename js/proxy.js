@@ -14,7 +14,6 @@ let allSets = [], shownIdx = 0;
 await loadSets();
 
 async function loadSets() {
-  // সব proxies নিয়ে আসো
   const { data, error } = await supabase
     .from('proxies')
     .select('*')
@@ -34,55 +33,28 @@ function renderSets() {
   const container = document.getElementById('setsContainer');
   container.innerHTML = '';
 
-  // এখানে ৬ সেট দেখাবো slice করে
-  const slice = allSets.slice(shownIdx, shownIdx + 6);
+  // *** এখানেই filter করো *** 
+  // যা user এর taken_by === email বা taken_by !== null, ওই ইউজারের সামনে গোপন থাকবে, তাই শুধু free proxy গুলো দেখাবে
+  const filteredSets = allSets.filter(s => s.taken_by === null);
+
+  const slice = filteredSets.slice(shownIdx, shownIdx + 6);
 
   for (const s of slice) {
-    const takenBy = s.taken_by;
-    // যদি taken_by থাকে এবং সেটা অন্য কারো হয়, তাহলে সেটি দেখাবে না (skip)
-    if (takenBy && takenBy !== email) continue;
-
     const card = document.createElement('div');
     card.className = 'set-card';
+    card.style.borderColor = 'transparent';  // ফ্রি proxy default border
 
-    // রং সেট করো
-    if (!takenBy) {
-      card.style.backgroundColor = '#f0f0f0'; // ফ্রি proxy light grey
-    } else if (userColors[takenBy]) {
-      card.style.backgroundColor = userColors[takenBy]; // ইউজারের রং
-    } else {
-      card.style.backgroundColor = '#ccc'; // অন্য কারো হলে ধূসর
-    }
-
-    // content
     const pre = document.createElement('pre');
     pre.textContent = s.content;
     card.appendChild(pre);
 
-    // copy button
     const btn = document.createElement('button');
-
-    if (takenBy === email) {
-      btn.innerText = 'Copied';
-      btn.disabled = true;
-      card.classList.add('copied');
-    } else if (!takenBy) {
-      btn.innerText = 'Copy';
-      btn.disabled = false;
-    } else {
-      // অন্য কেউ নিয়েছে, কিন্তু আমরা show করবো না আগেই skip করলাম
-      // safety
-      btn.innerText = 'Taken';
-      btn.disabled = true;
-    }
+    btn.innerText = 'Copy';
+    btn.disabled = false;
 
     btn.onclick = async () => {
-      if (btn.disabled) return;
-
       try {
         await navigator.clipboard.writeText(s.content);
-
-        // taken_by update করো
         const { error } = await supabase
           .from('proxies')
           .update({ taken_by: email })
@@ -93,12 +65,7 @@ function renderSets() {
           return;
         }
 
-        btn.innerText = 'Copied';
-        btn.disabled = true;
-        card.style.backgroundColor = userColors[email] || '#673fdc';
-        card.classList.add('copied');
-
-        // UI রিফ্রেশ করার জন্য ডাটা রিলোড করো
+        // copy করার পর রিফ্রেশ করো, যাতে ওই set আর দেখা না যায়
         await loadSets();
       } catch {
         alert('Copy failed');
@@ -108,11 +75,31 @@ function renderSets() {
     card.appendChild(btn);
     container.appendChild(card);
   }
+
+  // এখন নিচে দেখাবে user এর taken proxies আলাদা রঙ border দিয়ে 
+  const takenSets = allSets.filter(s => s.taken_by === email);
+
+  takenSets.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'set-card copied';
+    card.style.borderColor = userColors[email] || '#673fdc';
+
+    const pre = document.createElement('pre');
+    pre.textContent = s.content;
+    card.appendChild(pre);
+
+    const btn = document.createElement('button');
+    btn.innerText = 'Copied';
+    btn.disabled = true;
+
+    card.appendChild(btn);
+    container.appendChild(card);
+  });
 }
 
 document.getElementById('genBtn').onclick = () => {
   shownIdx += 6;
-  if (shownIdx >= allSets.length) shownIdx = 0;
+  if (shownIdx >= allSets.filter(s => s.taken_by === null).length) shownIdx = 0;
   renderSets();
 };
 
